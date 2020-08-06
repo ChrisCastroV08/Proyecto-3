@@ -1,1 +1,51 @@
+from tkinter import *
 
+
+master = Tk()
+master.title("Proyecto 3")
+master.geometry("600x400")
+master.configure(bg="#525659")
+master.resizable(False, False)
+
+main = Toplevel()
+main.geometry("700x700")
+main.resizable(False, False)
+main.withdraw()
+
+
+def first_screen():
+    master.geometry("600x400")
+    firstLabel.place(x=170, y=100)
+    loginButton.place(x=350, y=250)
+    registerButton.place(x=170, y=250)
+    backButton.place_forget()
+
+def main_menu():
+    master.withdraw()
+    main.deiconify()
+
+def register():
+    master.geometry("600x600")
+    firstLabel.place_forget()
+    loginButton.place_forget()
+    registerButton.place_forget()
+    backButton.place(x=0, y=557)
+
+
+def read_file(path):
+    archive = open(path)
+    content = archive.readlines()
+    archive.close()
+    return content
+
+
+
+
+firstLabel = Label(master, text="""3C Company System
+Bill Generator """, font=("System", 20))
+loginButton = Button(master, text="Login",font=("System", 18))
+registerButton = Button(master, text="Register", font=("System", 18), command=register)
+backButton = Button(master, text="Go\nBack", font=("System", 15), command=first_screen)
+
+first_screen()
+master.mainloop()
