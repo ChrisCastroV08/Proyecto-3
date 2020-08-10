@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import imutils
+from shutil import rmtree
 
 #Esta lista contiene a todos los usuarios registrados
 users=[]
@@ -15,16 +16,24 @@ class User(): #Esta clase nos permite crear usuarios
         self.residencia=residencia
 
         self.registrado=registrado
+        self.actualizando=False
 
-
-        self.cantidad_imagenes=300	#Nos indica la cantidad de imagenes tomará el programa para el reconocimiento
+        self.cantidad_imagenes=300	        #Nos indica la cantidad de imagenes nuevas que tomará el programa en el reconocimiento
         self.camara=1				#Nos indica si se utilizará la webcam del pc (0) o una cámara externa (1)
-
-        self.directorio="image/{}".format(self.nombre)
+        self.contador=0                  	#Este contador toma la cantidad de imágenes que obtiene el programa
+        self.version=0
+        self.directorio="image/{}".format(self.nombre)  #Carpeta donde se guardaráan los archivos de cada usuario
+            
 
     #Permite al usuario registrarse en caso de que no lo esté
     def registrar(self):
-        if self.registrado==False:
+
+        #Verifica si se está realizando un registro o una actuaalización
+        if self.registrado==False or self.actualizando==True:
+
+            #Toma en cuenta la cantidad de imagenes a obtener
+            if self.registrado==False and self.actualizando==False:
+                self.cantidad_imagenes=300
 
             #Verifica si existe el directorio propio de este usuario, si no existe crea el directorio
             if not os.path.exists(self.directorio):
@@ -36,17 +45,21 @@ class User(): #Esta clase nos permite crear usuarios
             #Este método nos permite reconocer si se encuentra un rostro en una imagen
             faceClassif = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
-            #Este contador toma la cantidad de imágenes que obtiene el programa
-            contador=0
+            #indica la cantidad máxima de imagenes que se obtendrán para el modelo
+            limite=self.contador+self.cantidad_imagenes
 
+            #Inicia el bucle de la cámara
             while (cap.isOpened()):
                 ret,frame = cap.read()
 
 
                 if ret==True:
 
-                	#Con esto podemos reescalar el frame
+                    #Con esto podemos reescalar el frame
                     frame=imutils.resize(frame, width=640)
+
+                    #Invierte la imagen para que se vea correctamente
+                    frame=cv2.flip(frame, 1)
 
                     #Este método nos permite convertir un frame a escala de grises
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -58,7 +71,7 @@ class User(): #Esta clase nos permite crear usuarios
                     faces = faceClassif.detectMultiScale(gray,scaleFactor=1.2,
                             minNeighbors=5,minSize=(30,30),maxSize=(500,500))
 
-
+                    
                     for (x,y,w,h) in faces:
 
                     	#Dibuja un rectangulo sobre el rostro para indicar que se está detectando
@@ -69,22 +82,35 @@ class User(): #Esta clase nos permite crear usuarios
                         #Reescala la imagen del rostro del usuario
                         face = cv2.resize(face, (150,150), interpolation=cv2.INTER_CUBIC)
                         #Guarda la imagen del usuario en su respectivo directorio
-                        cv2.imwrite("{}/{}cara_{}.jpg".format(self.directorio,self.nombre,i), face)
+                        cv2.imwrite("{}/{}cara_{}.jpg".format(self.directorio,self.nombre,self.contador), face)
 
+                        #Se obtiene la cantidad de imagenes que se han generado en total
+                        self.contador+=1
+
+                        #Se obtiene el porcentaje del proceso realizado           
+                        if self.version==0:
+                            aux1=round((((users[0].contador-1)%users[0].cantidad_imagenes)/users[0].cantidad_imagenes*100),0)
+                            aux2=round(((users[0].contador%users[0].cantidad_imagenes)/users[0].cantidad_imagenes*100),0)
+                        else:
+                            aux1=round((((users[0].contador-1-300)%users[0].cantidad_imagenes)/users[0].cantidad_imagenes*100),0)
+                            aux2=round((((users[0].contador-300)%users[0].cantidad_imagenes)/users[0].cantidad_imagenes*100),0)
+                        
+                        porcentaje_anterior = int(aux1)
+                        porcentaje = int(aux2)
+
+                        if self.contador%self.cantidad_imagenes==0:
+                            porcentaje=100
+                            
                         #Se le brinda al usuario el porcentaje del proceso que se ha realizado
-                        contador+=1
-                        porcentaje_anterior = int(round((contador-1)/self.cantidad_imagenes*100,0))
-                        porcentaje = int(round(contador/self.cantidad_imagenes*100,0))
-
-                        if porcentaje>porcentaje_anterior:
+                        if porcentaje>porcentaje_anterior and porcentaje%5==0:
                             print("Se ha completado el {}% del registro".format(porcentaje))
 
                     #Muestra la imagen que toma la cámara
                     cv2.imshow("frame",frame)
 
 
-                	#Finaliza el proceso en caso de presionar la letra "q" o que la cantidad de imagenes tomadas sea la requerida
-                    if cv2.waitKey(1) & 0xFF == ord("q") or contador>=self.cantidad_imagenes:
+                    #Finaliza el proceso en caso de presionar la letra "q" o que la cantidad de imagenes tomadas sea la requerida
+                    if cv2.waitKey(1) & 0xFF == ord("q") or self.contador>=limite:
                         break
                 else:
                     break
@@ -100,10 +126,89 @@ class User(): #Esta clase nos permite crear usuarios
             print("El usuario {} ya se encuentra registrado".format(self.email))
 
 
+    #Realiza el entrenamiento del modelo para la detección del rostro del usuario
+    def entrenamiento(self):
+
+        #Verifica si se está actualizando o registrando
+        if self.actualizando==True:
+
+            #Verifica si existen modelos del usuario creados
+            if os.path.exists("{}/EigenFaces_{}.xml".format(self.directorio,self.nombre)):
+
+                #Si existen modelos del usuario, se eliminan
+                print("Realizando preparaciones para actualizar...")
+                os.remove("{}/EigenFaces_{}.xml".format(self.directorio,self.nombre))
+
+        label,labels,rostros = 0,[],[]
+        print("Leyendo las imagenes registradas...")
+
+        #Se toman las imágenes creadas
+        for archivo in os.listdir(self.directorio):
+            #print("Imagen: {}".format(archivo))
+
+            #Se guardan etiquetas que identifican al usuario en una lista
+            labels.append(label)
+
+            #Se guardan las imágenes con los rostros en escala de grises del usuario en una lista
+            rostros.append(cv2.imread("{}/{}".format(self.directorio,archivo),0))
+
+        #Se declara la variable que puede identificar la similitud delos rostros
+        face_recognizer = cv2.face.EigenFaceRecognizer_create()
+
+        print("Entrenando el programa...")
+
+        #Se inicia el entrenamiento del programa
+        face_recognizer.train(rostros, np.array(labels))
+        #Se guradan los modelos del programa en un archivo ".xml"
+        face_recognizer.write("{}/EigenFaces_{}.xml".format(self.directorio,self.nombre))
+
+        print("Se ha completado el entrenamiento del modelo")
+
+        #Se le indica al usuario la finalización del proceso realizado
+        if self.registrado==False:
+            print("Se ha completado el registro")
+        if self.actualizando==True:
+            print("Se han actualizado los modelos")
+
+        #Se restauran las variables a sus valores correspondientes
+        self.registrado=True
+        self.actualizando=False
+
+    #Permite actualizar los modelos que el usuario tenga, agregando más
+    def actualizar(self):
+
+        #Activa el modo de actualización
+        self.actualizando=True
+        #Determina la cantidad de nuevas imagenes que se van a agregar
+        self.cantidad_imagenes=100
+        #Indica la cantidad de veces que se han actualizado los modelos del usuario
+        self.version+=1
+        print("Se empezará a actualizar el modelo...")
+
+        self.registrar()
+
+    #Permite al usuario eliminar su propio directorio
+    def eliminar_usuario(self):
+        
+        #Se reestablecen los atributos del usuario a sus valores originales
+        self.contador=0
+        self.version=0
+        self.cantidad_imagenes=300
+        
+        #Comprueba si el directorio existe
+        if os.path.exists(self.directorio):
+
+            #Elimina el directorio y todo los archivos que contenga
+            print("El usuario {} se está eliminando...".format(self.nombre))
+            rmtree(self.directorio)
+            print("El usuario ha sido eliminado")
+            
+
 #Se creó un usuario de prueba
-joel=User("Joel",18,305400385,"joel.araya97@gmail.com","Cartago",True)
+joel=User("Joel",18,305400385,"joel.araya97@gmail.com","Cartago",False)
 users.append(joel)
 
-users[0].registrar()
+#users[0].registrar()
 #users[0].entrenamiento()
-
+users[0].actualizar()
+#users[0].eliminar_usuario()
