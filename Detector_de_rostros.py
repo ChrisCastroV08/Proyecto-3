@@ -8,7 +8,7 @@ from shutil import rmtree
 users=[]
 
 class User(): #Esta clase nos permite crear usuarios
-    def __init__(self, nombre, edad, cedula, email, residencia,registrado):
+    def __init__(self, nombre, apellidos, edad, cedula, email, residencia,registrado):
         self.nombre=nombre.capitalize()
         self.edad=edad
         self.cedula=cedula
@@ -123,7 +123,7 @@ class User(): #Esta clase nos permite crear usuarios
 
         #Le indica al usuario que ya se encuentra registrado, en caso de registrarse nuevamente
         else:
-            print("El usuario {} ya se encuentra registrado".format(self.email))
+            print("El usuario {} ya se encuentra registrado".format(self.nombre))
 
 
     #Realiza el entrenamiento del modelo para la detección del rostro del usuario
@@ -152,7 +152,7 @@ class User(): #Esta clase nos permite crear usuarios
             #Se guardan las imágenes con los rostros en escala de grises del usuario en una lista
             rostros.append(cv2.imread("{}/{}".format(self.directorio,archivo),0))
 
-        #Se declara la variable que puede identificar la similitud delos rostros
+        #Se declara la variable que puede identificar la similitud de los rostros
         face_recognizer = cv2.face.EigenFaceRecognizer_create()
 
         print("Entrenando el programa...")
@@ -202,13 +202,99 @@ class User(): #Esta clase nos permite crear usuarios
             print("El usuario {} se está eliminando...".format(self.nombre))
             rmtree(self.directorio)
             print("El usuario ha sido eliminado")
+
+    #Este método confirma la identidad del usuario
+    def identificar(self):
+        print("Realizando preparativos para iniciar la identificación...")
+
+        #Se declara la variable que puede identificar la similitud de los rostros
+        face_recognizer = cv2.face.EigenFaceRecognizer_create()
+        #Se le indica a la variable la ubicación del archivo entrenado
+        face_recognizer.read("{}/EigenFaces_{}.xml".format(self.directorio,self.nombre))
+
+        #Inicia la cámara
+        cap = cv2.VideoCapture(self.camara)
+
+        #Se agrega el método que permite reconocer la presencia de un rostro en una imagen
+        faceClassif = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+        #Se agregaron 2 variables para comprobar si la identidad del usuario es correcta
+        verificacion_positiva=0
+        verificacion_negativa=0
+
+        while (cap.isOpened()):
+            ret,frame = cap.read()
             
+            if ret==True:
+
+                #Se invierte la imagen para evitar el efecto espejo
+                frame=cv2.flip(frame, 1)
+                #Este método nos permite convertir un frame a escala de grises
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                #Se genera una copia del frame en escala de grises
+                auxFrame=gray.copy()
+
+                #Detecta la presencia de un rostro en el frame con escala de grises
+                faces = faceClassif.detectMultiScale(gray,scaleFactor=1.2,
+                            minNeighbors=5,minSize=(30,30),maxSize=(500,500))
+                                    
+                for (x,y,w,h) in faces:
+                    #Obtiene la imagen del rostro del usuario
+                    face = auxFrame[y:y+h,x:x+w]
+                    #Reescala la imagen del rostro del usuario
+                    face = cv2.resize(face, (150,150), interpolation=cv2.INTER_CUBIC)
+
+                    resultado = face_recognizer.predict(face)
+
+                    if resultado[1]<4000:
+                        #Se indica el nombre del usuario
+                        cv2.putText(frame, "{}".format(self.nombre),(x,y-5),1,1.2,(255,0,0),1,cv2.LINE_AA)
+                        #Dibuja un rectángulo azul sobre el rostro para indicar que se está detectando el rostro del usuario
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(200,0,0),2)
+                        #Se incrementa en 1 la variable que confirma la precensia del usuario
+                        verificacion_positiva+=1
+                    else:
+                        #Se indica que el usuario que se encuentra en la cámara es desconocido
+                        cv2.putText(frame, "Desconocido",(x,y-5),1,1.2,(0,0,200),1,cv2.LINE_AA)
+                        #Dibuja un rectángulo rojo sobre el rostro para indicar que se está detectando un rostro desconocido
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(200,0,0),2)
+                        #Se incrementa en 1 la variable que indica que no es el usuario correcto
+                        verificacion_negativa+=1
+
+                    #print("pos {}, neg {}".format(verificacion_positiva,verificacion_negativa))
+
+                #Si la variable de verificaion del rostro del usuario llega a 100 se confirma su identidad
+                if verificacion_positiva>=100:
+                    print("Hola {}, se ha comprobado tu identidad, puedes ingresar".format(self.nombre))
+                    break
+
+                #Si la variable de verificación de un rostro diferente al del usuario supera los 600, indica que no es el usuario correspondiente y prohíbe el acceso 
+                if verificacion_negativa>=600:
+                    print("No eres {}, no puedes ingresar".format(self.nombre))
+                    break
+                    
+
+                #Muestra las imágenes que obtiene la cámara
+                cv2.imshow("frame",frame)
+
+
+                #Finaliza el proceso en caso de presionar la letra "q" o que la cantidad de imagenes tomadas sea la requerida
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+            else:
+                break
+
+        #Cierra la cámara y las ventanas abiertas
+        cap.release()
+        cv2.destroyAllWindows()
 
 #Se creó un usuario de prueba
-joel=User("Joel",18,305400385,"joel.araya97@gmail.com","Cartago",False)
+joel=User("Joel", "Gómez Araya", 18, 305400385,"joel.araya97@gmail.com","Cartago",True)
 users.append(joel)
 
 #users[0].registrar()
 #users[0].entrenamiento()
-users[0].actualizar()
+#users[0].actualizar()
 #users[0].eliminar_usuario()
+
+users[0].identificar()
