@@ -10,6 +10,7 @@ users=[]
 class User(): #Esta clase nos permite crear usuarios
     def __init__(self, nombre, apellidos, edad, cedula, email, residencia,registrado):
         self.nombre=nombre.capitalize()
+        self.apellidos=apellidos.capitalize()
         self.edad=edad
         self.cedula=cedula
         self.email=email.lower()
@@ -288,13 +289,16 @@ class User(): #Esta clase nos permite crear usuarios
         cap.release()
         cv2.destroyAllWindows()
 
-#Se creó un usuario de prueba
-joel=User("Joel", "Gómez Araya", 18, 305400385,"joel.araya97@gmail.com","Cartago",True)
-users.append(joel)
+#Se creó un usuario de prueba que solo se ejecuta si se ejecuta este archivo
+if __name__ == "__main__":
 
-#users[0].registrar()
-#users[0].entrenamiento()
-#users[0].actualizar()
-#users[0].eliminar_usuario()
+    joel=User("Joel", "Gómez Araya", 18, 305400385,"joel.araya97@gmail.com","Cartago",True)
+    users.append(joel)
 
-users[0].identificar()
+    #users[0].registrar()
+    #users[0].entrenamiento()
+    #users[0].actualizar()
+    #users[0].eliminar_usuario()
+    #users[0].identificar()
+
+
