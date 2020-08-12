@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import messagebox
 import os
 import re
 
@@ -10,11 +10,10 @@ regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
 master = Tk()
 master.title("Project 3")
 master.geometry("600x400")
-master.configure(bg="#525659")
 master.resizable(False, False)
 
 main = Toplevel()
-main.geometry("700x700")
+main.geometry("600x600")
 main.resizable(False, False)
 main.withdraw()
 
@@ -22,9 +21,11 @@ main.withdraw()
 def first_screen():
     master.geometry("600x400")
     bgLabel.config(image=menuBg)
-    registerButton.config(command= register, font = ("System", 18))
+    registerButton.config(command=register, font=("System", 18))
     loginButton.place(x=350, y=200)
     registerButton.place(x=170, y=200)
+    bot.pack()
+    users.place_forget()
     lastNameEntry.place_forget()
     firstNameEntry.place_forget()
     nameEntry.place_forget()
@@ -34,11 +35,6 @@ def first_screen():
     residenceEntry.place_forget()
     backButton.place_forget()
     errorLabel.place_forget()
-
-
-def main_menu():
-    master.withdraw()
-    main.deiconify()
 
 
 def register():
@@ -58,9 +54,9 @@ def register():
 
 
 def verify_register():
-    registeredUsers.clear()
-    registerList = [firstNameEntry.get(), lastNameEntry.get(), nameEntry.get()
-                    , residenceEntry.get(), emailEntry.get(), IDEntry.get(),ageEntry.get()]
+    registerList = [firstNameEntry.get().capitalize(), lastNameEntry.get().capitalize(),
+                    nameEntry.get().capitalize(), residenceEntry.get().capitalize(), emailEntry.get(),
+                    IDEntry.get(), ageEntry.get()]
     saveFile = read_file("Saved.txt")
     i = 0
     while i < len(registerList):
@@ -68,7 +64,7 @@ def verify_register():
             errorLabel.config(text="Make sure to fill all the blanks")
             return
         else:
-            i=i+1
+            i = i + 1
     i = 0
     while i < 4:
         try:
@@ -90,7 +86,7 @@ def verify_register():
     i = 0
     while i < len(saveFile):
         if IDEntry.get() == saveFile[i].split(",")[5]:
-            errorLabel.config(text="This user is already registered!")
+            errorLabel.config(fg="red", text="This user is already registered!")
             return
         else:
             i = i + 1
@@ -99,23 +95,52 @@ def verify_register():
     else:
         errorLabel.config(text="You must be 18 years old or older")
         return
-    if (re.search(regex, emailEntry.get())):
+    if re.search(regex, emailEntry.get()):
         pass
     else:
         errorLabel.config(text="Please enter a valid email")
         return
-    errorLabel.config(text="")
+    errorLabel.config(fg="lightgreen", text="User successfully registered!")
     write_save(registerList)
-    i = 0
 
-    while i < len(saveFile):
-        registeredUsers.append(saveFile[i].split(",")[2])
-        print(registeredUsers)
-        i = i+1
-    print(registeredUsers)
 
 def login():
-    users['values'] = ()
+    bgLabel.config(image=loginBg)
+    backButton.place(x=0, y=357)
+    registerButton.place_forget()
+
+    saveFile = read_file("Saved.txt")
+    registeredUsers.clear()
+    users.delete(0, END)
+    i = 0
+    while i < len(saveFile):
+        registeredUsers.append(saveFile[i].split(",")[0] + " " + saveFile[i].split(",")[1] + " " +
+                               saveFile[i].split(",")[2] + " ID: " + saveFile[i].split(",")[5])
+        i = i + 1
+
+    for i in registeredUsers:
+        users.insert(END, i)
+    users.place(x=73, y=40)
+
+
+def main_close():
+    if messagebox.askyesno("Exit", "Do you wanna exit?"):
+        master.quit()
+
+
+def on_closing():
+    if messagebox.askyesno("Back", "Are you sure you want to go back to the menu?"):
+        main.withdraw()
+        master.deiconify()
+
+
+def main_menu():
+    master.withdraw()
+    main.deiconify()
+    main.protocol("WM_DELETE_WINDOW", on_closing)
+    menuLabel.config(image=mainBg)
+    menuLabel.place(x=-2, y=-2)
+    createBillButton.place(x=0, y=0)
 
 
 def read_file(path):
@@ -132,7 +157,7 @@ def write_save(saved):
     i = 0
     while i < len(saved):
         file.write(str(saved[i]) + ',')
-        i = i+1
+        i = i + 1
     file.close()
 
 
@@ -143,15 +168,20 @@ def load_image(image_name):
 
 menuBg = load_image("MenuBg.png")
 registerBg = load_image("RegisterBg.png")
+loginBg = load_image("LoginBg.png")
+mainBg = load_image("MainBg.png")
 
 bgLabel = Label(master)
 bgLabel.place(x=-2, y=-2)
-errorLabel = Label(master, text="", font=("System", 15), fg="red", bg="#525659")
+menuLabel = Label(main)
+# master.protocol("WM_DELETE_WINDOW", main_close)
 saveFile = read_file("Saved.txt")
-loginButton = Button(master, text="Login", font=("System", 18))
+errorLabel = Label(master, text="", font=("System", 15), fg="red", bg="#525659")
+loginButton = Button(master, text="Login", font=("System", 18), command=login)
 registerButton = Button(master, text="Register")
 backButton = Button(master, text="Go\nBack", font=("System", 15), command=first_screen)
-users = ttk.Combobox(master, state="readonly", width=27)
+users = Listbox(master, width=52, bg="lightgrey", font=("Times New Roman", 15),
+                selectmode=SINGLE, justify=CENTER)
 nameEntry = Entry(master, width=12, font=("Times New Roman", 15), justify=CENTER, bg="lightgrey")
 firstNameEntry = Entry(master, width=12, font=("Times New Roman", 15), justify=CENTER, bg="lightgrey")
 lastNameEntry = Entry(master, width=12, font=("Times New Roman", 15), justify=CENTER, bg="lightgrey")
@@ -159,5 +189,18 @@ IDEntry = Entry(master, width=20, font=("Times New Roman", 15), justify=CENTER, 
 ageEntry = Spinbox(master, width=3, from_=0, to=100, font=("Times New Roman", 15), bg="lightgrey")
 emailEntry = Entry(master, width=25, font=("Times New Roman", 15), bg="lightgrey")
 residenceEntry = Entry(master, width=25, font=("Times New Roman", 15), bg="lightgrey")
+
+bot = Button(master, text="Enter", command=main_menu)
+
+# ------------------------------------------------------------------
+
+createBillButton = Button(main, text="Create Bill", font=("System", 16))
+searchBillsButton = Button(main, text="Search Bills", font=("System", 16))
+deleteBillsButton = Button(main, text="Delete Bills", font=("System", 16))
+generateInformButton = Button(main, text="Generate Inform", font=("System", 16))
+addServiceButton = Button(main, text="Add Services", font=("System", 16))
+updateServiceButtonButton = Button(main, text="Update Services", font=("System", 16))
+showPDFButton = Button(main, text="Show a PDF", font=("System", 16))
+
 first_screen()
 master.mainloop()
