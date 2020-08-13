@@ -16,6 +16,9 @@ class User(): #This class allows us to create users
         self.email=email.lower()
         self.residence=residence
 
+        self.joined=False
+        self.testing=False
+
         self.registered=registered
         self.updating=False
 
@@ -175,6 +178,10 @@ class User(): #This class allows us to create users
         self.registered=True
         self.updating=False
 
+        self.testing=True
+
+        
+
     #It allows updating the models that the user has, adding more
     def update(self):
 
@@ -267,11 +274,13 @@ class User(): #This class allows us to create users
                 #If the verification variable of the user's face reaches 100, his identity is confirmed
                 if positive_check>=100:
                     print("Hello {}, your identity has been verified, you can enter".format(self.name))
+                    self.joined=True
                     break
 
                 #If the verification variable of a face other than that of the user exceeds 600, it indicates that it is not the corresponding user and prohibits access
                 if negative_check>=600:
                     print("You are not {}, you cannot enter".format(self.name))
+                    Self.joined=False
                     break
                     
 
