@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import os
 import re
+import Detector_de_rostros as fd
 
 registerList = []
 registeredUsers = []
@@ -17,6 +18,7 @@ main.geometry("600x600")
 main.resizable(False, False)
 main.withdraw()
 
+usuarios=[]
 
 def first_screen():
     master.geometry("600x400")
@@ -103,6 +105,15 @@ def verify_register():
     errorLabel.config(fg="lightgreen", text="User successfully registered!")
     write_save(registerList)
 
+    user = fd.Users(registerList[2],"{} {}".format(registerList[0],registerList[1]),
+                    registerList[6],registerList[5],registerList[4],registerList[3],False)
+    usuarios.append(user)
+
+    for i in range(len(usuarios)):
+        if usuarios[i].identification==user.identification:
+            usuario[i].registrar()
+            break
+
 
 def login():
     bgLabel.config(image=loginBg)
@@ -116,11 +127,31 @@ def login():
     while i < len(saveFile):
         registeredUsers.append(saveFile[i].split(",")[0] + " " + saveFile[i].split(",")[1] + " " +
                                saveFile[i].split(",")[2] + " ID: " + saveFile[i].split(",")[5])
+        
+        user = fd.Users(saveFile[i].split(",")[2],"{} {}".format(saveFile[i].split(",")[0],saveFile[i].split(",")[1]),
+                    saveFile[i].split(",")[6],saveFile[i].split(",")[5],saveFile[i].split(",")[4],saveFile[i].split(",")[3],True)
+        usuarios.append(user)
+        
         i = i + 1
 
     for i in registeredUsers:
         users.insert(END, i)
     users.place(x=73, y=40)
+
+
+def verify_login():
+    n=-1
+    for i in range(usuarios):
+        if int(users.get(ANCHOR)[-9:])==usuarios[i].identification:
+            usuarios[i].identify()
+            n=i
+            break
+
+    if n>=0 and usuarios[n].joined==True:
+        pass
+        
+            
+
 
 
 def main_close():
@@ -162,7 +193,7 @@ def write_save(saved):
 
 
 def load_image(image_name):
-    image_path = os.path.join("Images", image_name)
+    image_path = os.path.join("image", image_name)
     return PhotoImage(file=image_path)
 
 
