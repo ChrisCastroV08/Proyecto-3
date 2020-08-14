@@ -24,6 +24,7 @@ def first_screen():
     master.geometry("600x400")
     bgLabel.config(image=menuBg)
     registerButton.config(command=register, font=("System", 18))
+    loginButton.config(command=login)
     loginButton.place(x=350, y=200)
     registerButton.place(x=170, y=200)
     bot.pack()
@@ -105,18 +106,20 @@ def verify_register():
     errorLabel.config(fg="lightgreen", text="User successfully registered!")
     write_save(registerList)
 
-    user = fd.Users(registerList[2],"{} {}".format(registerList[0],registerList[1]),
+    user = fd.User(registerList[2],"{} {}".format(registerList[0],registerList[1]),
                     registerList[6],registerList[5],registerList[4],registerList[3],False)
     usuarios.append(user)
 
     for i in range(len(usuarios)):
         if usuarios[i].identification==user.identification:
-            usuario[i].registrar()
+            usuarios[i].register()
             break
 
 
 def login():
     bgLabel.config(image=loginBg)
+    loginButton.config(command=verify_login)
+    loginButton.place(x=350,y=300)
     backButton.place(x=0, y=357)
     registerButton.place_forget()
 
@@ -128,7 +131,7 @@ def login():
         registeredUsers.append(saveFile[i].split(",")[0] + " " + saveFile[i].split(",")[1] + " " +
                                saveFile[i].split(",")[2] + " ID: " + saveFile[i].split(",")[5])
         
-        user = fd.Users(saveFile[i].split(",")[2],"{} {}".format(saveFile[i].split(",")[0],saveFile[i].split(",")[1]),
+        user = fd.User(saveFile[i].split(",")[2],"{} {}".format(saveFile[i].split(",")[0],saveFile[i].split(",")[1]),
                     saveFile[i].split(",")[6],saveFile[i].split(",")[5],saveFile[i].split(",")[4],saveFile[i].split(",")[3],True)
         usuarios.append(user)
         
@@ -141,14 +144,15 @@ def login():
 
 def verify_login():
     n=-1
-    for i in range(usuarios):
+
+    for i in range(len(usuarios)):
         if int(users.get(ANCHOR)[-9:])==usuarios[i].identification:
             usuarios[i].identify()
             n=i
             break
 
     if n>=0 and usuarios[n].joined==True:
-        pass
+        print("Ingresado")
         
             
 
@@ -208,7 +212,7 @@ menuLabel = Label(main)
 # master.protocol("WM_DELETE_WINDOW", main_close)
 saveFile = read_file("Saved.txt")
 errorLabel = Label(master, text="", font=("System", 15), fg="red", bg="#525659")
-loginButton = Button(master, text="Login", font=("System", 18), command=login)
+loginButton = Button(master, text="Login", font=("System", 18))
 registerButton = Button(master, text="Register")
 backButton = Button(master, text="Go\nBack", font=("System", 15), command=first_screen)
 users = Listbox(master, width=52, bg="lightgrey", font=("Times New Roman", 15),
