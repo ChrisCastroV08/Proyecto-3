@@ -12,7 +12,7 @@ class User(): #This class allows us to create users
         self.name=name.capitalize()
         self.surnames=surnames.capitalize()
         self.age=age
-        self.identification=identification
+        self.identification=int(identification)
         self.email=email.lower()
         self.residence=residence
 
@@ -22,7 +22,7 @@ class User(): #This class allows us to create users
         self.registered=registered
         self.updating=False
 
-        self.quantity_images=300	        #It indicates the amount of new images that the program will take in recognition
+        self.quantity_images=100	        #It indicates the amount of new images that the program will take in recognition
         self.camera=1				#It tells us if the pc webcam (0) or an external camera (1) is used
         self.count=0                  	#This counter gives the number of images that the program obtains
         self.version=0
@@ -93,11 +93,11 @@ class User(): #This class allows us to create users
 
                         #The percentage of the process carried out is obtained           
                         if self.version==0:
-                            aux1=round((((users[0].count-1)%users[0].quantity_images)/users[0].quantity_images*100),0)
-                            aux2=round(((users[0].count%users[0].quantity_images)/users[0].quantity_images*100),0)
+                            aux1=round((((self.count-1)%self.quantity_images)/self.quantity_images*100),0)
+                            aux2=round(((self.count%self.quantity_images)/self.quantity_images*100),0)
                         else:
-                            aux1=round((((users[0].count-1-300)%users[0].quantity_images)/users[0].quantity_images*100),0)
-                            aux2=round((((users[0].count-300)%users[0].quantity_images)/users[0].quantity_images*100),0)
+                            aux1=round((((self.count-1-300)%self.quantity_images)/self.quantity_images*100),0)
+                            aux2=round((((self.count-300)%self.quantity_images)/self.quantity_images*100),0)
                         
                         last_percentage = int(aux1)
                         percentage = int(aux2)
@@ -118,6 +118,8 @@ class User(): #This class allows us to create users
                         break
                 else:
                     break
+
+            self.quantity_images=100
 
             #At the end of the process the video and all the windows are closed
             cap.release()
