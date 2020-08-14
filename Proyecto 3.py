@@ -3,11 +3,14 @@ from tkinter import messagebox
 import os
 import re
 import Detector_de_rostros as fd
+from tkinter import ttk
+from reportlab.pdfgen import canvas
 
 registerList = []
 registeredUsers = []
 regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
-
+userLogged = []
+itemsRegistered = []
 master = Tk()
 master.title("Project 3")
 master.geometry("600x400")
@@ -17,17 +20,18 @@ main = Toplevel()
 main.geometry("600x600")
 main.resizable(False, False)
 main.withdraw()
+item = StringVar()
 
-usuarios=[]
+usuarios = []
+
 
 def first_screen():
     master.geometry("600x400")
     bgLabel.config(image=menuBg)
     registerButton.config(command=register, font=("System", 18))
-    loginButton.config(command=login)
+    loginButton.config(command=login, font=("System", 18))
     loginButton.place(x=350, y=200)
     registerButton.place(x=170, y=200)
-    bot.pack()
     users.place_forget()
     lastNameEntry.place_forget()
     firstNameEntry.place_forget()
@@ -106,20 +110,20 @@ def verify_register():
     errorLabel.config(fg="lightgreen", text="User successfully registered!")
     write_save(registerList)
 
-    user = fd.User(registerList[2],"{} {}".format(registerList[0],registerList[1]),
-                    registerList[6],registerList[5],registerList[4],registerList[3],False)
+    user = fd.User(registerList[2], "{} {}".format(registerList[0], registerList[1]),
+                   registerList[6], registerList[5], registerList[4], registerList[3], False)
     usuarios.append(user)
 
     for i in range(len(usuarios)):
-        if usuarios[i].identification==user.identification:
+        if usuarios[i].identification == user.identification:
             usuarios[i].register()
             break
 
 
 def login():
     bgLabel.config(image=loginBg)
-    loginButton.config(command=verify_login)
-    loginButton.place(x=350,y=300)
+    loginButton.config(command=verify_login, font=("System", 15))
+    loginButton.place(x=350, y=300)
     backButton.place(x=0, y=357)
     registerButton.place_forget()
 
@@ -130,11 +134,12 @@ def login():
     while i < len(saveFile):
         registeredUsers.append(saveFile[i].split(",")[0] + " " + saveFile[i].split(",")[1] + " " +
                                saveFile[i].split(",")[2] + " ID: " + saveFile[i].split(",")[5])
-        
-        user = fd.User(saveFile[i].split(",")[2],"{} {}".format(saveFile[i].split(",")[0],saveFile[i].split(",")[1]),
-                    saveFile[i].split(",")[6],saveFile[i].split(",")[5],saveFile[i].split(",")[4],saveFile[i].split(",")[3],True)
+
+        user = fd.User(saveFile[i].split(",")[2], "{} {}".format(saveFile[i].split(",")[0], saveFile[i].split(",")[1]),
+                       saveFile[i].split(",")[6], saveFile[i].split(",")[5], saveFile[i].split(",")[4],
+                       saveFile[i].split(",")[3], True)
         usuarios.append(user)
-        
+
         i = i + 1
 
     for i in registeredUsers:
@@ -143,19 +148,16 @@ def login():
 
 
 def verify_login():
-    n=-1
+    n = -1
 
     for i in range(len(usuarios)):
-        if int(users.get(ANCHOR)[-9:])==usuarios[i].identification:
+        if int(users.get(ANCHOR)[-9:]) == usuarios[i].identification:
             usuarios[i].identify()
-            n=i
+            n = i
             break
 
-    if n>=0 and usuarios[n].joined==True:
-        print("Ingresado")
-        
-            
-
+    if n >= 0 and usuarios[n].joined == True:
+        main_menu()
 
 
 def main_close():
@@ -164,7 +166,7 @@ def main_close():
 
 
 def on_closing():
-    if messagebox.askyesno("Back", "Are you sure you want to go back to the menu?"):
+    if messagebox.askyesno("Exit", "Are you sure you want to go back to the menu?"):
         main.withdraw()
         master.deiconify()
 
@@ -174,8 +176,119 @@ def main_menu():
     main.deiconify()
     main.protocol("WM_DELETE_WINDOW", on_closing)
     menuLabel.config(image=mainBg)
+    exitButton.config(command=on_closing)
+    addServiceButton.config(command=add_service)
+    createInvoiceButton.config(command=create_invoice)
     menuLabel.place(x=-2, y=-2)
-    createBillButton.place(x=0, y=0)
+    createInvoiceButton.place(x=120, y=200)
+    searchBillsButton.place(x=325, y=200)
+    deleteBillsButton.place(x=100, y=300)
+    generateInformButton.place(x=325, y=300)
+    addServiceButton.place(x=90, y=400)
+    updateServiceButton.place(x=325, y=400)
+    showPDFButton.place(x=330, y=500)
+    exitButton.place(x=150, y=500)
+    errorLabel2.place_forget()
+    itemCost.place_forget()
+    itemDescription.place_forget()
+    items.place_forget()
+    i = 0
+    userLogged.clear()
+    while i < len(saveFile):
+        if users.get(ANCHOR)[-9:] == saveFile[i].split(",")[5]:
+            userLogged.append(saveFile[i])
+            print(userLogged)
+            return
+        else:
+            i += 1
+
+
+def create_invoice():
+    exitButton.config(command=main_menu)
+    createInvoiceButton.config(command=lambda: creating_invoice(itemDescription.get()))
+    createInvoiceButton.place(x=350, y=500)
+    searchBillsButton.place_forget()
+    deleteBillsButton.place_forget()
+    generateInformButton.place_forget()
+    addServiceButton.place_forget()
+    updateServiceButton.place_forget()
+    showPDFButton.place_forget()
+    items.place(x=100, y=200)
+
+
+def creating_invoice(itemes):
+    pdf = canvas.Canvas("invoices/invoice 1.pdf", pagesize=(200, 250), bottomup=0)
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.line(0, 20, 200, 20)
+    pdf.drawCentredString(100, 30, "3C COMPANY")
+    pdf.drawCentredString(100, 40, "BILL GENERATOR")
+
+    pdf.line(0, 45, 200, 45)
+
+    pdf.setFont("Times-Bold", 5)
+    pdf.drawRightString(55, 55, "INVOICE No. :")
+    pdf.drawRightString(55, 65, "CUSTOMER NAME :")
+    pdf.drawRightString(55, 75, "CUSTOMER EMAIL :")
+    pdf.drawRightString(160, 55, "DATE :")
+    pdf.drawRightString(160, 65, "DUE DATE :")
+    pdf.drawRightString(160, 75, "RESIDENCE :")
+
+    pdf.roundRect(15, 80, 170, 130, 10, stroke=1, fill=0)
+    pdf.line(15, 95, 185, 95)
+    pdf.drawCentredString(60, 90, "DESCRIPTION")
+    pdf.drawCentredString(125, 90, "QTY")
+    pdf.drawCentredString(148, 90, "PRICE")
+    pdf.drawCentredString(173, 90, "TOTAL")
+
+    pdf.drawCentredString(30, 105, "ITEM 1")
+    pdf.drawCentredString(60, 105, "{}".format(itemes))
+    pdf.drawCentredString(145, 105, "{}".format(itemCost.get()))
+    pdf.line(15, 200, 185, 200)
+    pdf.line(115, 80, 115, 210)
+    pdf.line(135, 80, 135, 210)
+    pdf.line(160, 80, 160, 210)
+    # pdf.showPage()
+    pdf.save()
+
+
+def add_service():
+    menuLabel.config(image=addBg)
+    exitButton.config(command=main_menu)
+    addServiceButton.config(command=adding_service)
+    errorLabel2.config(text="")
+    errorLabel2.place(x=300, y=300)
+    itemDescription.place(x=100, y=200)
+    itemCost.place(x=350, y=200)
+    addServiceButton.place(x=300, y=500)
+    createInvoiceButton.place_forget()
+    searchBillsButton.place_forget()
+    deleteBillsButton.place_forget()
+    generateInformButton.place_forget()
+    updateServiceButton.place_forget()
+    showPDFButton.place_forget()
+
+
+def adding_service():
+    servicesList = [itemCost.get(), itemDescription.get()]
+    i = 0
+    while i < len(servicesList):
+        if len(servicesList[i]) == 0:
+            errorLabel2.config(text="Make sure to fill all the blanks")
+            return
+        else:
+            i = i + 1
+    try:
+        int(itemCost.get())
+    except ValueError:
+        errorLabel2.config(text="You must use numbers for the price")
+        return
+    itemsRegistered.append(itemDescription.get())
+    i = 0
+    while i < len(itemsRegistered):
+        items["values"] = ("{}".format(itemsRegistered[i]))
+        i += 1
+    errorLabel2.config(fg="lightgreen", text="Service registered succesfully")
+    main.after(1500, add_service)
 
 
 def read_file(path):
@@ -186,7 +299,7 @@ def read_file(path):
 
 
 def write_save(saved):
-    file = open("Saved.txt", 'r+')
+    file = open(saved, 'r+')
     file.read()
     file.write('\n')
     i = 0
@@ -205,7 +318,7 @@ menuBg = load_image("MenuBg.png")
 registerBg = load_image("RegisterBg.png")
 loginBg = load_image("LoginBg.png")
 mainBg = load_image("MainBg.png")
-
+addBg = load_image("AddBg.png")
 bgLabel = Label(master)
 bgLabel.place(x=-2, y=-2)
 menuLabel = Label(main)
@@ -225,17 +338,20 @@ ageEntry = Spinbox(master, width=3, from_=0, to=100, font=("Times New Roman", 15
 emailEntry = Entry(master, width=25, font=("Times New Roman", 15), bg="lightgrey")
 residenceEntry = Entry(master, width=25, font=("Times New Roman", 15), bg="lightgrey")
 
-bot = Button(master, text="Enter", command=main_menu)
-
 # ------------------------------------------------------------------
 
-createBillButton = Button(main, text="Create Bill", font=("System", 16))
-searchBillsButton = Button(main, text="Search Bills", font=("System", 16))
-deleteBillsButton = Button(main, text="Delete Bills", font=("System", 16))
-generateInformButton = Button(main, text="Generate Inform", font=("System", 16))
-addServiceButton = Button(main, text="Add Services", font=("System", 16))
-updateServiceButtonButton = Button(main, text="Update Services", font=("System", 16))
-showPDFButton = Button(main, text="Show a PDF", font=("System", 16))
+createInvoiceButton = Button(main, text="Create Bill", font=("System", 18), command=create_invoice)
+searchBillsButton = Button(main, text="Search Bills", font=("System", 18))
+deleteBillsButton = Button(main, text="Delete Bills", font=("System", 18))
+generateInformButton = Button(main, text="Generate Inform", font=("System", 18))
+addServiceButton = Button(main, text="Add Services", font=("System", 18), command=add_service)
+updateServiceButton = Button(main, text="Update Services", font=("System", 18))
+showPDFButton = Button(main, text="Show a PDF", font=("System", 18))
+itemDescription = Entry(main, width=20, font=("Times New Roman", 15), justify=CENTER, bg="lightgrey")
+itemCost = Entry(main, width=5, font=("Times New Roman", 15), justify=CENTER, bg="lightgrey")
+exitButton = Button(main, text="Exit", font=("System", 18))
+errorLabel2 = Label(main, text="", font=("System", 15), fg="red", bg="#525659")
+items = ttk.Combobox(main, width=20, textvariable=item, font=("Times New Roman", 15), state="readonly")
 
 first_screen()
 master.mainloop()
